@@ -1,4 +1,4 @@
-# CloudStream MovieBox Provider
+# CloudStream MovieBox Provider (that's repo is in early stage may have some issues)
 
 This repository contains a CloudStream extension that connects MovieBox to CloudStream, allowing you to watch movies and TV shows on your Android TV or mobile device.
 
