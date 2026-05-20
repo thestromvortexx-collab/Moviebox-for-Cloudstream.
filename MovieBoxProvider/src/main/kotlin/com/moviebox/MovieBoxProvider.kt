@@ -5,7 +5,6 @@ import android.net.Uri
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.utils.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -212,7 +211,7 @@ class MovieBoxProvider : MainAPI() {
                     type = type
                 ) {
                     this.posterUrl = coverImg
-                    this.score = Score.from10(item["imdbRatingValue"]?.asText())
+                    this.score = item["imdbRatingValue"]?.asText()?.let { Score.from10(it) }
                 }
             }
         } catch (_: Exception) {
@@ -287,8 +286,8 @@ class MovieBoxProvider : MainAPI() {
                 this.posterUrl = poster
                 this.plot = plot
                 this.year = year
-                this.score = Score.from10(rating)
-                addImdbId(imdbId)
+                this.score = rating?.let { Score.from10(it) }
+                LoadResponse.addImdbId(this, imdbId)
             }
         } else {
             val seasons = data["seasons"]?.mapNotNull { season ->
@@ -310,8 +309,8 @@ class MovieBoxProvider : MainAPI() {
                 this.posterUrl = poster
                 this.plot = plot
                 this.year = year
-                this.score = Score.from10(rating)
-                addImdbId(imdbId)
+                this.score = rating?.let { Score.from10(it) }
+                LoadResponse.addImdbId(this, imdbId)
             }
         }
     }
