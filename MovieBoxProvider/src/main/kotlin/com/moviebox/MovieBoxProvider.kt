@@ -6,16 +6,13 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.utils.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import java.net.URLEncoder
 import java.security.MessageDigest
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
-import kotlin.math.max
 import java.security.SecureRandom
 
 class MovieBoxProvider : MainAPI() {
@@ -203,7 +200,7 @@ class MovieBoxProvider : MainAPI() {
                 val title = item["title"]?.asText()?.substringBefore("[") ?: return@mapNotNull null
                 val id = item["subjectId"]?.asText() ?: return@mapNotNull null
                 val coverImg = item["cover"]?.get("url")?.asText()
-                val subjectType = item["subjectType"]?.asInt() ?: 1
+                val subjectType = if (id.startsWith("m")) 1 else 2
                 val type = when (subjectType) {
                     1 -> TvType.Movie
                     2 -> TvType.TvSeries
@@ -248,7 +245,7 @@ class MovieBoxProvider : MainAPI() {
             val title = item["title"]?.asText() ?: return@mapNotNull null
             val id = item["subjectId"]?.asText() ?: return@mapNotNull null
             val coverImg = item["cover"]?.get("url")?.asText()
-            val subjectType = item["subjectType"]?.asInt() ?: 1
+            val subjectType = if (id.startsWith("m")) 1 else 2
             val type = when (subjectType) {
                 1 -> TvType.Movie
                 2 -> TvType.TvSeries
@@ -282,7 +279,7 @@ class MovieBoxProvider : MainAPI() {
         val plot = data["description"]?.asText()
         val year = data["year"]?.asInt()
         val rating = data["imdbRatingValue"]?.asText()
-        val subjectType = data["subjectType"]?.asInt() ?: 1
+        val subjectType = if (url.startsWith("m")) 1 else 2
         val imdbId = data["imdbId"]?.asText()
 
         return if (subjectType == 1) {
@@ -343,14 +340,22 @@ class MovieBoxProvider : MainAPI() {
 
         playData["playList"]?.forEach { source ->
             val sourceUrl = source["url"]?.asText() ?: return@forEach
-            val quality = source["quality"]?.asText() ?: "HD"
+            val qualityStr = source["quality"]?.asText() ?: "HD"
+            val quality = when (qualityStr.uppercase()) {
+                "4K" -> 2160
+                "1080P" -> 1080
+                "720P" -> 720
+                "480P" -> 480
+                "360P" -> 360
+                else -> 0
+            }
             callback.invoke(
-                newExtractorLink(
+                ExtractorLink(
                     name,
                     name,
                     sourceUrl,
                     "",
-                    getQuality(quality),
+                    quality,
                     sourceUrl.contains(".m3u8")
                 )
             )
@@ -365,16 +370,5 @@ class MovieBoxProvider : MainAPI() {
         }
 
         return true
-    }
-
-    private fun getQuality(quality: String): Int {
-        return when (quality.uppercase()) {
-            "4K" -> Qualities.P2160.value
-            "1080P" -> Qualities.P1080.value
-            "720P" -> Qualities.P720.value
-            "480P" -> Qualities.P480.value
-            "360P" -> Qualities.P360.value
-            else -> Qualities.Unknown.value
-        }
     }
 }
