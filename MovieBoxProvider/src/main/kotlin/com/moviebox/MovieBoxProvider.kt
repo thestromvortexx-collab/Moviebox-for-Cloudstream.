@@ -287,7 +287,7 @@ class MovieBoxProvider : MainAPI() {
                 this.plot = plot
                 this.year = year
                 this.score = rating?.let { Score.from10(it) }
-                LoadResponse.addImdbId(this, imdbId)
+                this.imdbId = imdbId
             }
         } else {
             val seasons = data["seasons"]?.mapNotNull { season ->
@@ -309,7 +309,7 @@ class MovieBoxProvider : MainAPI() {
                 this.plot = plot
                 this.year = year
                 this.score = rating?.let { Score.from10(it) }
-                LoadResponse.addImdbId(this, imdbId)
+                this.imdbId = imdbId
             }
         }
     }
@@ -349,12 +349,12 @@ class MovieBoxProvider : MainAPI() {
             }
             callback.invoke(
                 ExtractorLink(
-                    name,
-                    name,
-                    sourceUrl,
-                    "",
-                    quality,
-                    sourceUrl.contains(".m3u8")
+                    source = name,
+                    name = name,
+                    url = sourceUrl,
+                    referer = "",
+                    quality = quality,
+                    isM3u8 = sourceUrl.contains(".m3u8")
                 )
             )
         }
