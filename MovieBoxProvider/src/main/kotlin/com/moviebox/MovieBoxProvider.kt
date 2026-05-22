@@ -287,8 +287,6 @@ class MovieBoxProvider : MainAPI() {
                 this.plot = plot
                 this.year = year
                 this.score = rating?.let { Score.from10(it) }
-                // Use metadata for IMDB ID
-                this.metadata = mapOf("imdbId" to (imdbId ?: ""))
             }
         } else {
             val seasons = data["seasons"]?.mapNotNull { season ->
@@ -310,8 +308,6 @@ class MovieBoxProvider : MainAPI() {
                 this.plot = plot
                 this.year = year
                 this.score = rating?.let { Score.from10(it) }
-                // Use metadata for IMDB ID
-                this.metadata = mapOf("imdbId" to (imdbId ?: ""))
             }
         }
     }
@@ -351,13 +347,13 @@ class MovieBoxProvider : MainAPI() {
             }
             callback.invoke(
                 newExtractorLink(
-                    name,
-                    name,
-                    sourceUrl,
-                    "",
-                    quality,
-                    sourceUrl.contains(".m3u8")
-                )
+                    source = name,
+                    name = name,
+                    url = sourceUrl,
+                ) {
+                    this.quality = quality
+                    this.isM3u8 = sourceUrl.contains(".m3u8")
+                }
             )
         }
 
