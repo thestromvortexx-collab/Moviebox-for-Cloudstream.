@@ -221,7 +221,7 @@ class MovieBoxProvider : MainAPI() {
         return newHomePageResponse(listOf(HomePageList(request.name, data)))
     }
 
-    override suspend fun search(query: String, page: Int): List<SearchResponse> {
+    override suspend fun search(query: String, page: Int): SearchResponseList {
         val url = "$mainUrl/wefeed-mobile-bff/subject-api/search/v2"
         val jsonBody = """{"page": $page, "perPage": 20, "keyword": "$query"}"""
         val xClientToken = generateXClientToken()
@@ -238,7 +238,7 @@ class MovieBoxProvider : MainAPI() {
 
         val response = app.post(url, headers = headers, requestBody = jsonBody.toRequestBody("application/json".toMediaType())).text
         val root = jacksonObjectMapper().readTree(response)
-        val items = root["data"]?.get("items") ?: return emptyList()
+        val items = root["data"]?.get("items") ?: return emptyList<SearchResponse>().toNewSearchResponseList()
 
         return items.mapNotNull { item ->
             val title = item["title"]?.asText() ?: return@mapNotNull null
@@ -253,7 +253,7 @@ class MovieBoxProvider : MainAPI() {
             newMovieSearchResponse(title, id, type) {
                 this.posterUrl = coverImg
             }
-        }
+        }.toNewSearchResponseList()
     }
 
     override suspend fun load(url: String): LoadResponse {
@@ -349,10 +349,10 @@ class MovieBoxProvider : MainAPI() {
                     source = name,
                     name = name,
                     url = sourceUrl,
-                ) {
-                    this.quality = quality
-                    this.isM3u8 = sourceUrl.contains(".m3u8")
-                }
+                    referer = "",
+                    quality = quality,
+                    isM3u8 = sourceUrl.contains(".m3u8")
+                )
             )
         }
 
