@@ -279,7 +279,6 @@ class MovieBoxProvider : MainAPI() {
         val year = data["year"]?.asInt()
         val rating = data["imdbRatingValue"]?.asText()
         val subjectType = if (url.startsWith("m")) 1 else 2
-        val imdbId = data["imdbId"]?.asText()
 
         return if (subjectType == 1) {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
