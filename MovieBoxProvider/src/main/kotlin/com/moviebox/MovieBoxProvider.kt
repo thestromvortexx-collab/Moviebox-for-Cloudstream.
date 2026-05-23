@@ -21,8 +21,8 @@ class MovieBoxProvider : MainAPI() {
     override var lang = "en"
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    private val secretKeyDefault = base64Decode("NzZpUmwwN3MweFNOOWpxbUVXQXQ3OUVCSlp1bElRSXNWNjRGWnIyTw==")
-    private val secretKeyAlt = base64Decode("WHFuMm5uTzQxL0w5Mm8xaXVYaFNMSFRiWHZZNFo1Wlo2Mm04bVNMQQ==")
+    private val secretKeyDefault = "NzZpUmwwN3MweFNOOWpxbUVXQXQ3OUVCSlp1bElRSXNWNjRGWnIyTw=="
+    private val secretKeyAlt = "WHFuMm5uTzQxL0w5Mm8xaXVYaFNMSFRiWHZZNFo1Wlo2Mm04bVNMQQ=="
 
     private fun md5(input: ByteArray): String {
         return MessageDigest.getInstance("MD5").digest(input)
@@ -114,7 +114,7 @@ class MovieBoxProvider : MainAPI() {
         val timestamp = hardcodedTimestamp ?: System.currentTimeMillis()
         val canonical = buildCanonicalString(method, accept, contentType, url, body, timestamp)
         val secret = if (useAltKey) secretKeyAlt else secretKeyDefault
-        val secretBytes = base64DecodeArray(secret)
+        val secretBytes = android.util.Base64.decode(secret, android.util.Base64.DEFAULT)
 
         val mac = Mac.getInstance("HmacMD5")
         mac.init(SecretKeySpec(secretBytes, "HmacMD5"))
@@ -211,7 +211,7 @@ class MovieBoxProvider : MainAPI() {
                     type = type
                 ) {
                     this.posterUrl = coverImg
-                    this.score = item["imdbRatingValue"]?.asText()?.let { Score.from10(it) }
+                    this.score = item["imdbRatingValue"]?.asDouble()?.let { Score.from10(it) }
                 }
             }
         } catch (_: Exception) {
@@ -221,7 +221,7 @@ class MovieBoxProvider : MainAPI() {
         return newHomePageResponse(listOf(HomePageList(request.name, data)))
     }
 
-    override suspend fun search(query: String, page: Int): SearchResponseList {
+    override suspend fun search(query: String, page: Int): List<SearchResponse> {
         val url = "$mainUrl/wefeed-mobile-bff/subject-api/search/v2"
         val jsonBody = """{"page": $page, "perPage": 20, "keyword": "$query"}"""
         val xClientToken = generateXClientToken()
@@ -238,7 +238,7 @@ class MovieBoxProvider : MainAPI() {
 
         val response = app.post(url, headers = headers, requestBody = jsonBody.toRequestBody("application/json".toMediaType())).text
         val root = jacksonObjectMapper().readTree(response)
-        val items = root["data"]?.get("items") ?: return emptyList<SearchResponse>().toNewSearchResponseList()
+        val items = root["data"]?.get("items") ?: return emptyList()
 
         return items.mapNotNull { item ->
             val title = item["title"]?.asText() ?: return@mapNotNull null
@@ -253,7 +253,7 @@ class MovieBoxProvider : MainAPI() {
             newMovieSearchResponse(title, id, type) {
                 this.posterUrl = coverImg
             }
-        }.toNewSearchResponseList()
+        }
     }
 
     override suspend fun load(url: String): LoadResponse {
@@ -277,7 +277,7 @@ class MovieBoxProvider : MainAPI() {
         val poster = data["cover"]?.get("url")?.asText()
         val plot = data["description"]?.asText()
         val year = data["year"]?.asInt()
-        val rating = data["imdbRatingValue"]?.asText()
+        val rating = data["imdbRatingValue"]?.asDouble()
         val subjectType = if (url.startsWith("m")) 1 else 2
 
         return if (subjectType == 1) {
